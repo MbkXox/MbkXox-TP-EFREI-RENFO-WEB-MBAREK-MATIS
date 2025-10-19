@@ -1,0 +1,125 @@
+name: CI/CD Pipeline - Gestion Produits
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+  KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ env.DOCKER_USERNAME }}
+        password: ${{ env.DOCKER_PASSWORD }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.DOCKER_USERNAME }}/gestion-produits
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'latest'
+
+    - name: Configure kubectl
+      run: |
+        mkdir -p ~/.kube
+        echo "${{ env.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+        chmod 600 ~/.kube/config
+
+    - name: Update deployment image
+      run: |
+        # Mise à jour de l'image dans le deployment
+        sed -i "s|matismbk/gestion-produits:latest|${{ env.DOCKER_USERNAME }}/gestion-produits:${{ github.sha }}|g" kubernetes/deployment-complete.yaml
+        
+    - name: Deploy to Kubernetes
+      run: |
+        kubectl apply -f kubernetes/deployment-complete.yaml
+        
+    - name: Wait for deployment
+      run: |
+        kubectl rollout status deployment/php-app-deployment --timeout=300s
+        kubectl rollout status deployment/mysql-deployment --timeout=300s
+        
+    - name: Get service info
+      run: |
+        kubectl get services
+        kubectl get pods
+        echo "Application déployée avec succès!"
+
+  test:
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'latest'
+
+    - name: Configure kubectl
+      run: |
+        mkdir -p ~/.kube
+        echo "${{ env.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+        chmod 600 ~/.kube/config
+
+    - name: Test application
+      run: |
+        # Attendre que l'application soit prête
+        kubectl wait --for=condition=ready pod -l app=php-app --timeout=300s
+        
+        # Tester la connectivité
+        kubectl get service php-app-service
+        
+        # Port forward pour tester localement
+        kubectl port-forward service/php-app-service 8080:80 &
+        sleep 10
+        
+        # Test HTTP
+        curl -f http://localhost:8080 || exit 1
+        
+        echo "Tests passés avec succès!"

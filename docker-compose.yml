@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  # Service PHP/Apache
+  web:
+    build: .
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    depends_on:
+      - db
+    volumes:
+      - ./php/www:/var/www/html
+    environment:
+      - APP_VERSION=${APP_VERSION:-1.0.0}
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - DB_NAME=gestion_produits
+    networks:
+      - gestion-produits-network
+
+  # Service MySQL
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: gestion_produits
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/gestion_produits.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - gestion-produits-network
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  gestion-produits-network:
+    driver: bridge
