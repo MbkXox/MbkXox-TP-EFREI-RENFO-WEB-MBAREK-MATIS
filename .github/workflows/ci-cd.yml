@@ -73,7 +73,7 @@ jobs:
     - name: Update deployment image
       run: |
         # Mise à jour de l'image dans le deployment PHP
-        sed -i "s|matismbk/gestion-produits:latest|${{ env.DOCKER_USERNAME }}/gestion-produits:${{ github.sha }}|g" kubernetes/php-deployment.yaml
+        sed -i "s|matismbk/gestion-produits:latest|${{ env.DOCKER_USERNAME }}/gestion-produits:latest|g" kubernetes/php-deployment.yaml
         
     - name: Deploy to Kubernetes
       run: |
