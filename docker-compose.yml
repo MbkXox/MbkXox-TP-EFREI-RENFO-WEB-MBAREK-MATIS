@@ -3,7 +3,9 @@ version: '3.8'
 services:
   # Service PHP/Apache
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: php/DockerFile
     ports:
       - "${WEB_PORT:-8080}:80"
     depends_on:
