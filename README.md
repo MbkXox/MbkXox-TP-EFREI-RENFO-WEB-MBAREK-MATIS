@@ -362,14 +362,3 @@ kubectl get events --sort-by='.lastTimestamp'
 
 URLs des images Docker Hub :
 - `matismbk/gestion-produits:latest`
-
-## Validation du déploiement
-
-L'application est correctement déployée si :
-- 3 réplicas PHP sont en cours d'exécution
-- 1 instance MySQL est active
-- Le service est accessible via NodePort 30080
-- L'application affiche la liste des produits
-- Le load balancing fonctionne entre les réplicas#   M b k X o x - T P - E F R E I - R E N F O - W E B - M B A R E K - M A T I S 
- 
- 
