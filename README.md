@@ -217,53 +217,6 @@ Le pipeline se déclenche automatiquement sur :
 2. **Deploy** : Déploiement sur Kubernetes
 3. **Test** : Tests de vérification
 
-### Options pour tester GitHub Actions
-
-#### Option 1 : Mode Test/Simulation (Recommandé)
-Utilisez le fichier `ci-cd-test.yml` qui :
-- ✅ Build et push l'image Docker
-- ✅ Valide la syntaxe des manifests Kubernetes
-- ✅ Simule le déploiement sans cluster réel
-- ✅ Exécute des tests d'intégration
-
-```bash
-# Créer une branche de test
-git checkout -b test
-git add .
-git commit -m "Test CI/CD pipeline"
-git push origin test
-```
-
-#### Option 2 : Kubernetes en ligne
-Services cloud recommandés :
-- **DigitalOcean Kubernetes** (DOKS) - 12$/mois
-- **Google Kubernetes Engine** (GKE) - Crédit gratuit 300$
-- **Azure Kubernetes Service** (AKS) - Crédit gratuit
-- **Amazon EKS** - Plus complexe mais puissant
-
-#### Option 3 : Runner auto-hébergé + Minikube local
-```bash
-# Sur votre machine locale
-# 1. Installer GitHub Actions Runner
-# 2. Configurer l'accès à votre Minikube
-# 3. Le pipeline déploiera sur votre cluster local
-```
-
-#### Option 4 : Kind (Kubernetes in Docker)
-```bash
-# Alternative plus légère que Minikube pour CI/CD
-kind create cluster --name test-cluster
-```
-
-### Déclenchement manuel
-
-```bash
-# Pousser sur main pour déclencher le pipeline
-git add .
-git commit -m "Deploy application"
-git push origin main
-```
-
 ## Commandes utiles
 
 ### Docker
